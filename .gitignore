@@ -1,0 +1,5 @@
+__pycache__/
+figures/
+code/*.png
+code/*.pdf
+code/*_manifest.json
