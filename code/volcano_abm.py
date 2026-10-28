@@ -163,6 +163,7 @@ def simulate(n_agents: int = 200,
     # Rolling window for semantic cue effect in agent output
     buf_s: List[int] = []
     buf_pred: List[int] = []
+    buf_correct: List[int] = []  # 1 if the agent's pre-update prediction matched y
 
     # Series
     times = []
@@ -174,6 +175,7 @@ def simulate(n_agents: int = 200,
     boundary_sim = []
     boundary_sim_t = []
     consensus = []
+    accuracy = []
 
     for t in range(T):
         # Sample a random learner; world generates token
@@ -205,8 +207,9 @@ def simulate(n_agents: int = 200,
         # rolling semantic effect
         buf_s.append(s)
         buf_pred.append(y_hat)
+        buf_correct.append(1 if y_hat == y else 0)
         if len(buf_s) > window:
-            buf_s.pop(0); buf_pred.pop(0)
+            buf_s.pop(0); buf_pred.pop(0); buf_correct.pop(0)
 
         if (t % window) == 0 and t > 0:
             times.append(t)
@@ -218,6 +221,7 @@ def simulate(n_agents: int = 200,
             p_pos = pred_arr[s_arr == +1].mean() if np.any(s_arr == +1) else np.nan
             p_neg = pred_arr[s_arr == -1].mean() if np.any(s_arr == -1) else np.nan
             sem_effect.append(p_pos - p_neg)
+            accuracy.append(float(np.mean(buf_correct)))
 
             w_mean.append(ww.mean())
             theta_mean.append(th.mean())
@@ -243,6 +247,7 @@ def simulate(n_agents: int = 200,
         "boundary_sim_t": np.array(boundary_sim_t),
         "boundary_sim": np.array(boundary_sim),
         "consensus": np.array(consensus),
+        "accuracy": np.array(accuracy),
         # diagnostics snapshots
         "w_final": np.array([ag.w for ag in agents]),
         "theta_final": np.array([ag.theta for ag in agents]),
@@ -262,19 +267,22 @@ def make_main_plot(series: Dict[str, np.ndarray], t_switch: int, out_png: str):
     # A: semantic mechanism
     ax[0].plot(times, series["sem_effect"], color=PALETTE["vermillion"], lw=1.6, label="Semantic cue effect")
     ax[0].axvline(t_switch, color=PALETTE["gray"], linestyle="--", alpha=0.6)
-    ax[0].set_title("A. Decline of semantic mechanism", loc="left")
+    ax[0].set_title("A. The semantic cue's effect fades", loc="left")
     ax[0].set_xlabel("Interactions (Time)")
     ax[0].set_ylabel("Cue effect")
     ax[0].legend(loc="lower left", frameon=False)
 
-    # B: persistence
-    ax[1].plot(series["boundary_sim_t"], series["boundary_sim"], color=PALETTE["green"], lw=1.6, label="Boundary sim. (to pre-switch)")
-    ax[1].plot(times, series["consensus"], color=PALETTE["orange"], lw=1.6, label="Consensus (sharpness)")
+    # B: projection. Accuracy of agents' predictions in a rolling window.
+    # (Boundary similarity and consensus were replaced here on 2026-10-28:
+    # an ablation check showed they don't move even when the local cue is
+    # made uninformative, so they can't show what carries the projection.)
+    ax[1].plot(times, series["accuracy"], color=PALETTE["green"], lw=1.6, label="Prediction accuracy")
+    ax[1].axhline(0.5, color=PALETTE["gray"], linestyle=":", alpha=0.8, label="Chance")
     ax[1].axvline(t_switch, color=PALETTE["gray"], linestyle="--", alpha=0.6)
-    ax[1].set_title("B. Persistence of the category", loc="left")
+    ax[1].set_title("B. Projection holds", loc="left")
     ax[1].set_xlabel("Interactions (Time)")
-    ax[1].set_ylabel("Stability / Agreement")
-    ax[1].set_ylim(0.0, 1.05)
+    ax[1].set_ylabel("Accuracy")
+    ax[1].set_ylim(0.4, 1.02)
     ax[1].legend(loc="lower left", frameon=False)
 
     plt.tight_layout()
@@ -346,6 +354,9 @@ def _series_summary(series: Dict[str, np.ndarray], t_switch: int = 12000) -> Dic
         "boundary_similarity_post_mean": float(np.nanmean(series["boundary_sim"])) if len(series["boundary_sim"]) else float("nan"),
         "consensus_post_mean": float(np.nanmean(series["consensus"][post_mask])) if np.any(post_mask) else float("nan"),
         "consensus_post_late_mean": _tail_mean(series["consensus"], post_mask),
+        "accuracy_pre_late_mean": _tail_mean(series["accuracy"], pre_mask),
+        "accuracy_post_mean": float(np.nanmean(series["accuracy"][post_mask])) if np.any(post_mask) else float("nan"),
+        "accuracy_post_late_mean": _tail_mean(series["accuracy"], post_mask),
     }
 
 
