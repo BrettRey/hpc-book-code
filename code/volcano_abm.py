@@ -686,6 +686,12 @@ def _run_seed_sensitivity(
                 "boundary_similarity_post_mean_sd": float(np.nanstd(bsim_post)),
                 "consensus_post_mean_mean": float(np.nanmean(cons_post)),
                 "consensus_post_mean_sd": float(np.nanstd(cons_post)),
+                # Quantities quoted in Chapter 7 (medians over seeds; "late" =
+                # mean of the last five windows before or after the switch).
+                "semantic_effect_pre_late_median": float(np.nanmedian([r["semantic_effect_pre_late_mean"] for r in rows])),
+                "semantic_effect_post_late_median": float(np.nanmedian([r["semantic_effect_post_late_mean"] for r in rows])),
+                "accuracy_pre_late_median": float(np.nanmedian([r["accuracy_pre_late_mean"] for r in rows])),
+                "accuracy_post_late_median": float(np.nanmedian([r["accuracy_post_late_mean"] for r in rows])),
             },
         },
     )
