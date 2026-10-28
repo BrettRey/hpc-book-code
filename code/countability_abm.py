@@ -1044,10 +1044,11 @@ def experiment_data_drift(
         print(f"  (datum frequency: {phase['datum_frequency']:.3f})")
 
     print("\n" + "-"*50)
-    print("RESULT (single-seed diagnostic):")
-    print("  - a(n) and cardinals typically fall earlier and faster in this setup")
-    print("  - many/agreement remain comparatively robust in this run window")
-    print("  - Use --exp=sensitivity for multi-seed uncertainty summaries")
+    first, last = phase_data[0], phase_data[-1]
+    print(f"RESULT (single seed): change from phase {first['phase']} to phase {last['phase']}")
+    for c in ("a(n)", "three", "many", "agreement", "much"):
+        print(f"  {c}: {first[c]:.2%} -> {last[c]:.2%} ({last[c] - first[c]:+.2%})")
+    print("  Use --exp=sensitivity for multi-seed uncertainty summaries")
     print("-"*50)
 
     # Final matrix
@@ -1195,16 +1196,11 @@ def experiment_prescriptivism(seed: int = 42, visualize: bool = True) -> World:
         print(f"  many: {profile['many']:.2%}")
 
     print("\n" + "-"*50)
-    print("RESULT:")
     start = phase_data[0]
     end = phase_data[-1]
-    if end['a(n)'] < start['a(n)'] or end['three'] < start['three']:
-        print("  - Institutional pressure suppresses tight count packaging over time")
-        print("  - Even so, loose count behavior (many/agreement) remains highly stable")
-    else:
-        print("  - Discrete-object pressure keeps count packaging resilient")
-        print("  - Institutional pressure can slow, but not eliminate, count usage")
-    print("  - The model captures tension, not categorical victory by either side")
+    print(f"RESULT: change from phase 1 to phase {len(phase_data)}")
+    for c in ("a(n)", "three", "many"):
+        print(f"  {c}: {start[c]:.2%} -> {end[c]:.2%} ({end[c] - start[c]:+.2%})")
     print("-"*50)
 
     if visualize and HAS_MATPLOTLIB:
@@ -1261,13 +1257,10 @@ def experiment_folks_instability(seed: int = 42) -> World:
     print(f"  'many folks' accepted by: {100*many_folks/n_agents:.1f}% of agents")
 
     print("\n" + "-"*50)
+    share = three_folks / n_agents
     print("RESULT:")
-    print("  - 'folks' shows higher inter-speaker variation than canonical count nouns")
-    if 0.1 < (three_folks / n_agents) < 0.9:
-        print("  - 'three folks' is genuinely split across speakers")
-    else:
-        print("  - In this run, 'three folks' is mostly one-sided; seed effects remain")
-    print("  - The model still predicts weaker tight-lock behavior for 'folks'")
+    print(f"  'three' accepted with folks by {share:.1%} of agents, with cattle by {three_cattle / n_agents:.1%}")
+    print(f"  'three folks' is {'split across speakers' if 0.1 < share < 0.9 else 'mostly one-sided'} in this run")
     print("-"*50)
 
     return world
